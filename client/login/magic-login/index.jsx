@@ -14,8 +14,6 @@ import notices from 'notices';
 import { login } from 'lib/paths';
 import {
 	CHECK_YOUR_EMAIL_PAGE,
-	INTERSTITIAL_PAGE,
-	LINK_EXPIRED_PAGE,
 } from 'state/login/magic-login/constants';
 import {
 	getMagicLoginEmailAddressFormInput,
@@ -24,91 +22,77 @@ import {
 import { getCurrentQueryArguments } from 'state/ui/selectors';
 import {
 	hideMagicLoginRequestForm,
-	showMagicLoginInterstitialPage,
 } from 'state/login/magic-login/actions';
 import { recordTracksEvent } from 'state/analytics/actions';
 import Main from 'components/main';
 import EmailedLoginLinkSuccessfully from './emailed-login-link-successfully';
-import EmailedLoginLinkExpired from './emailed-login-link-expired';
-import HandleEmailedLinkForm from './handle-emailed-link-form';
 import RequestLoginEmailForm from './request-login-email-form';
 import PageViewTracker from 'lib/analytics/page-view-tracker';
 import GlobalNotices from 'components/global-notices';
+import Gridicon from 'gridicons';
 
 class MagicLogin extends React.Component {
 	static propTypes = {
 		hideMagicLoginRequestForm: PropTypes.func.isRequired,
 		magicLoginEmailAddress: PropTypes.string,
 		magicLoginEnabled: PropTypes.bool,
-		magicLoginView: PropTypes.string,
-		recordTracksEvent: PropTypes.func.isRequired,
-		showMagicLoginInterstitialPage: PropTypes.func.isRequired,
+		showCheckYourEmail: PropTypes.bool.isRequired,
+		tracks: PropTypes.func.isRequired,
 		translate: PropTypes.func.isRequired,
 	};
 
 	onClickEnterPasswordInstead = event => {
 		event.preventDefault();
-		this.props.recordTracksEvent( 'calypso_login_enter_password_instead_click' );
+		this.props.tracks( 'calypso_login_enter_password_instead_click' );
 
 		page( login( { isNative: true } ) );
 	};
 
 	magicLoginMainContent() {
 		const {
-			magicLoginView,
 			magicLoginEmailAddress,
+			showCheckYourEmail,
+			tracks,
+			translate,
 		} = this.props;
 
-		switch ( magicLoginView ) {
-			case LINK_EXPIRED_PAGE:
-				this.props.recordTracksEvent( 'calypso_login_magic_link_expired_link_view' );
-				return <EmailedLoginLinkExpired />;
-			case CHECK_YOUR_EMAIL_PAGE:
-				this.props.recordTracksEvent( 'calypso_login_magic_link_link_sent_view' );
-				return <EmailedLoginLinkSuccessfully emailAddress={ magicLoginEmailAddress } />;
-			case INTERSTITIAL_PAGE:
-				this.props.recordTracksEvent( 'calypso_login_magic_link_interstitial_view' );
-				return <HandleEmailedLinkForm />;
+		if ( showCheckYourEmail ) {
+			tracks( 'calypso_login_magic_link_link_sent_view' );
+			return <EmailedLoginLinkSuccessfully emailAddress={ magicLoginEmailAddress } />;
 		}
+
+		tracks( 'calypso_login_magic_link_request_email_view' );
+		return (
+			<div>
+				<RequestLoginEmailForm />
+				<div className="magic-login__footer">
+					<a href="#" onClick={ this.onClickEnterPasswordInstead }>
+						<Gridicon icon="arrow-left" size={ 18 } /> { translate( 'Enter a password instead' ) }
+					</a>
+				</div>
+			</div>
+		);
 	}
 
-	componentWillMount() {
-		const {
-			magicLoginEnabled,
-			queryArguments,
-		} = this.props;
+	pageViewTracker() {
+		const path = '/log-in/link';
+		const title = 'Login > Link';
 
-		if ( magicLoginEnabled && queryArguments && queryArguments.action === 'handleLoginEmail' ) {
-			this.props.showMagicLoginInterstitialPage();
-		}
+		return <PageViewTracker path={ path } title={ title } />;
 	}
 
 	render() {
 		const {
-			magicLoginView,
-			translate,
+			showCheckYourEmail,
 		} = this.props;
 		return (
-			<Main className={ {
-				'magic-login': true,
-				'magic-login__request_link': ! magicLoginView,
-			} }>
-				<PageViewTracker path="/login" title="Login" />
-
+				<Main className={ {
+					'magic-login': true,
+					'magic-login__request_link': ! showCheckYourEmail,
+				} }>
+				{ this.pageViewTracker() }
 				<GlobalNotices id="notices" notices={ notices.list } />
-
-				{ this.magicLoginMainContent() || (
-					<div>
-						<RequestLoginEmailForm />
-						<div className="magic-login__footer">
-							<a href="#"
-								key="enter-password-link"
-								onClick={ this.onClickEnterPasswordInstead }>
-								{ translate( 'Enter a password instead' ) }
-							</a>
-						</div>
-					</div>
-				) }
+				{ this.magicLoginMainContent() }
 			</Main>
 		);
 	}
@@ -116,18 +100,18 @@ class MagicLogin extends React.Component {
 
 const mapState = state => {
 	const magicLoginEnabled = isEnabled( 'login/magic-login' );
+
 	return {
 		magicLoginEnabled,
 		magicLoginEmailAddress: getMagicLoginEmailAddressFormInput( state ),
-		magicLoginView: magicLoginEnabled ? getMagicLoginCurrentView( state ) : null,
+		showCheckYourEmail: getMagicLoginCurrentView( state ) === CHECK_YOUR_EMAIL_PAGE,
 		queryArguments: getCurrentQueryArguments( state ),
 	};
 };
 
 const mapDispatch = {
 	hideMagicLoginRequestForm,
-	showMagicLoginInterstitialPage,
-	recordTracksEvent,
+	tracks: recordTracksEvent,
 };
 
 export default connect( mapState, mapDispatch )( localize( MagicLogin ) );

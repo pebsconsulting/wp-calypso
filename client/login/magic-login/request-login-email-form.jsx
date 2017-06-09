@@ -66,6 +66,7 @@ class RequestLoginEmailForm extends React.Component {
 
 		return (
 			<div>
+				<h2 className={ 'magic-login__formheader' }>{ translate( 'Log in with a link' ) }</h2>
 				{ requestError &&
 					<Notice
 						duration={ 10000 }
@@ -75,19 +76,19 @@ class RequestLoginEmailForm extends React.Component {
 						onDismissClick={ this.onNoticeDismiss }
 						status="is-error" />
 				}
-				<LoggedOutForm onSubmit={ this.onSubmit }>
+				<p>{
+					translate( 'Get a link sent to the email address associated ' +
+						'with your account to log in instantly without your password.' )
+				}</p>
+				{ currentUser && currentUser.username &&
 					<p>{
-						translate( 'Get a link sent to the email address associated ' +
-							'with your account to log in instantly without your password.' )
-					}</p>
-					{ currentUser && currentUser.username &&
-						<p>{
-							translate( 'NOTE: You are already logged in as user: %(user)s', {
-								args: {
-									user: currentUser.username
-								}
-							} ) }</p>
-					}
+						translate( 'NOTE: You are already logged in as user: %(user)s', {
+							args: {
+								user: currentUser.username
+							}
+						} ) }</p>
+				}
+				<LoggedOutForm onSubmit={ this.onSubmit }>
 					<FormFieldset>
 						<FormTextInput
 							autoCapitalize="off"

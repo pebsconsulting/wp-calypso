@@ -2,12 +2,17 @@
  * Internal dependencies
  */
 import config from 'config';
-import { login, magicLogin } from './controller';
+import {
+	login,
+	magicLogin,
+	magicLoginUse,
+} from './controller';
 import { makeLayout, redirectLoggedIn, setUpLocale } from 'controller';
 
 export default router => {
 	if ( config.isEnabled( 'login/magic-login' ) ) {
-		router( '/log-in/link', redirectLoggedIn, magicLogin, makeLayout );
+		router( '/log-in/link/:lang?', setUpLocale, redirectLoggedIn, magicLogin, makeLayout );
+		router( '/log-in/link/use/:lang?', setUpLocale, redirectLoggedIn, magicLoginUse, makeLayout );
 	}
 
 	if ( config.isEnabled( 'login/wp-login' ) ) {
