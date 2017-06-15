@@ -8,6 +8,7 @@ import { localize } from 'i18n-calypso';
 /**
  * Internal dependencies
  */
+import { recordTracksEvent } from 'state/analytics/actions';
 import addQueryArgs from 'lib/route/add-query-args';
 import config from 'config';
 import EmptyContent from 'components/empty-content';
@@ -19,8 +20,12 @@ const lostPasswordURL = addQueryArgs( {
 
 class EmailedLoginLinkExpired extends React.Component {
 	render() {
-		const { translate } = this.props;
-		// @TODO this.props.recordTracksEvent( 'calypso_login_magic_link_expired_link_view' );
+		const {
+			tracks,
+			translate,
+		} = this.props;
+
+		tracks( 'calypso_login_magic_link_expired_link_view' );
 
 		return (
 			<div>
@@ -44,5 +49,8 @@ class EmailedLoginLinkExpired extends React.Component {
 	}
 }
 
-// `connect`ing here so `RedirectWhenLoggedIn` can do the same
-export default connect()( localize( EmailedLoginLinkExpired ) );
+const mapDispatch = {
+	tracks: recordTracksEvent,
+};
+
+export default connect( null, mapDispatch )( localize( EmailedLoginLinkExpired ) );
